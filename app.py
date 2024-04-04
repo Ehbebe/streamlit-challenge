@@ -8,12 +8,24 @@ from langchain.storage import LocalFileStore
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.runnable import RunnableLambda, RunnablePassthrough
 from langchain.callbacks.base import BaseCallbackHandler
+import os
 
+if "api_key" not in st.session_state:
+    st.session_state["api_key"] = None
 
 st.set_page_config(
     page_title="DocumentGPT",
     page_icon="📃",
 )
+
+if "messages" not in st.session_state:
+    st.session_state["messages"] = []
+
+if "api_key" not in st.session_state:
+    st.session_state["api_key"] = None
+
+if "api_key_bool" not in st.session_state:
+    st.session_state["api_key_bool"] = False
 
 
 class ChatCallbackHandler(BaseCallbackHandler):
@@ -36,6 +48,7 @@ llm = ChatOpenAI(
     callbacks=[
         ChatCallbackHandler(),
     ],
+    openai_api_key=st.session_state["api_key"],
 )
 
 
@@ -43,8 +56,14 @@ llm = ChatOpenAI(
 def embed_file(file):
     file_content = file.read()
     file_path = f"./.cache/files/{file.name}"
+    if not os.path.exists(f"./.cache/files/"):
+        os.makedirs(f"./..cache/files/", exist_ok=True)
+
     with open(file_path, "wb") as f:
         f.write(file_content)
+
+    os.makedirs(f"./.cache/embeddings/{file.name}", exist_ok=True)
+
     cache_dir = LocalFileStore(f"./.cache/embeddings/{file.name}")
     splitter = CharacterTextSplitter.from_tiktoken_encoder(
         separator="\n",
